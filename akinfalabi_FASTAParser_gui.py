@@ -32,7 +32,7 @@ class FastaParserGui(GuiBaseClass):
 
         # Create ttk.Entry for entering FASTA ID
         self.seq_id = ttk.Entry(frame)
-        self.seq_id.insert(0, "Your query sequence or ID should go here")
+        self.seq_id.insert(0, "Please enter your sequence ID")
         # self.seq_id.grid(row=0, column=0, padx=5, pady=5)
         self.seq_id.pack(side="left",pady=10, fill="both",expand=True)
         
@@ -206,27 +206,33 @@ Optional arguments are (either --help, --get-n or ---get-seq or --grep-seq):
                 else:
                     print(f'File `{argv[2]}` does not exist or is not a fasta file')
 
-            elif sys.argv[1] == "--gui":
+            # elif sys.argv[1] == "--gui":
 
-                root   = tk.Tk()
-                root.geometry('500x400')
-                self.root.title("FASTA Parser App")
-                fasta_parser = FastaParserGui(root) 
-                fasta_parser.fileOpen()
-                fasta_parser.mainLoop() 
-           
-
-                # root   = tk.Tk()
-                # root.title("FASTA Parser 2023")
-                # root.geometry('500x400')
-                # fasta_parser = FastaParserGui(root)
-                # fasta_parser.mainLoop() 
+            #     root   = tk.Tk()
+            #     root.geometry('500x400')
+            #     self.root.title("FASTA Parser App")
+            #     fasta_parser = FastaParserGui(root) 
+            #     fasta_parser.fileOpen()
+            #     fasta_parser.mainLoop() 
            
 
 if __name__ == "__main__":
-    # root=tk.Tk()
-    fasta_class = FastaParserGui()
-    fasta_class.main(sys.argv)
+    root   = tk.Tk()
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--gui":
+
+            fasta_class = FastaParserGui(root)
+            # fasta_class.main(sys.argv)
+            root.geometry('500x400')
+            root.title("FASTA Parser App")
+            fasta_class.fileOpen()
+            fasta_class.mainLoop()
+
+    else:
+        fasta_class = FastaParserGui(root)
+        fasta_class.main(sys.argv)
+
 
     # I'd check this later !!!!
 
