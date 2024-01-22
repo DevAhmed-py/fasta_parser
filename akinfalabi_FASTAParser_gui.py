@@ -37,7 +37,8 @@ class FastaParserGui(GuiBaseClass):
         self.seq_id.pack(side="left",pady=10, fill="both",expand=True)
         
         # Buttons 
-        get_n_button = ttk.Button(frame, text = "--get-n", command=self.get_n)
+        # I could use lambda function to pass self.file into the function but the result will be displayed in the terminal.
+        get_n_button = ttk.Button(frame, text = "--get-n", command= self.get_n_gui)
         # get_n_button.pack(side="top", pady=10,fill= "both", expand=True)
         get_n_button.pack(pady=10,fill= "both", expand=True)        # without side
 
@@ -70,23 +71,6 @@ class FastaParserGui(GuiBaseClass):
         # scrollbar_text2.pack(side="right", fill="y")
         # self.text2.config(yscrollcommand=scrollbar_text2.set)
 
-        
-
-    # def fileOpen (self,filename=""):
-    #     if self.lastdir is not None:
-    #         initialdir = self.lastdir
-    #     else:
-    #         initialdir = os.getcwd()
-    #     if filename == "":    
-    #         filename=fd.askopenfilename(initialdir=initialdir,filetypes=self.filetypes)
-        
-    #     if filename and os.path.exists(filename):
-    #         self.lastdir = os.path.dirname(filename)  # Update last directory
-    #         self.text.delete('1.0','end')
-    #         file = open(filename,'r')
-    #         for line in file:
-    #             self.text.insert('end',line)
-    #         file.close()
                 
     def fileOpen(self):
         if self.lastdir is not None:
@@ -95,16 +79,37 @@ class FastaParserGui(GuiBaseClass):
             initialdir = os.getcwd()
 
         self.file = fd.askopenfilename(initialdir = initialdir, title = "Select a Fasta file", filetypes=self.filetypes)
-        self.message(self.file)
+        
+        # self.message(self.file)
         if os.path.isfile(self.file):
             with open(self.file, "r") as file:
                 content = file.read()
+                self.text.delete('1.0', 'end')
+                self.text.insert('1.0', content)
 
-            return content
-                # self.text.insert("1.0", content)    # I don't want to insert the content of the file
-            # self.root.last_opened_file = file
+    def get_n_gui(self):
+        pattern = re.compile(r'(\w+\|\w+\|\w+)')
+        header_id = None
+        seq = None
+        for line in self.file:
+            if line.startswith(">"):
+                if header_id is not None:
+                    print(f'{header_id} \t {seq}')
+                header_id = pattern.findall(line)[0] if pattern.findall(line) else "Unknown"
+                seq = 0
+            elif not line.startswith(">"):
+                seq += len(line.strip())
 
+        # print(f'{header_id} \t {seq}')
 
+        self.text.delete('1.0', 'end')
+        self.text.insert('1.0', f'{header_id} \t {seq}' )
+
+    def get_seq_gui(self):
+        pass
+
+    def search_seq_gui(self):
+        pass
 
     def help(self):
         print("\nUsage: python3 script.py --help | --get-seq | --grep-seq |--get-n  ?[PATTERN|ID]? [FILE]")
@@ -206,48 +211,17 @@ Optional arguments are (either --help, --get-n or ---get-seq or --grep-seq):
                 else:
                     print(f'File `{argv[2]}` does not exist or is not a fasta file')
 
-            # elif sys.argv[1] == "--gui":
-
-            #     root   = tk.Tk()
-            #     root.geometry('500x400')
-            #     self.root.title("FASTA Parser App")
-            #     fasta_parser = FastaParserGui(root) 
-            #     fasta_parser.fileOpen()
-            #     fasta_parser.mainLoop() 
-           
 
 if __name__ == "__main__":
     root   = tk.Tk()
 
     if len(sys.argv) > 1:
         if sys.argv[1] == "--gui":
-
             fasta_class = FastaParserGui(root)
-            # fasta_class.main(sys.argv)
             root.geometry('500x400')
             root.title("FASTA Parser App")
             fasta_class.fileOpen()
             fasta_class.mainLoop()
-
     else:
         fasta_class = FastaParserGui(root)
         fasta_class.main(sys.argv)
-
-
-    # I'd check this later !!!!
-
-    ## check argv for a given file
-
-   # if "--gui" in sys.argv[1]: # I'd come back to this
-
-    # if len(sys.argv)>1:
-    #     ## if a filename is given call fileOpen(argv[1])
-    #     if (os.path.exists(sys.argv[1])):
-    #         fasta_parser.fileOpen(sys.argv[1])
-    #     else:
-    #         # usage(sys.argv)
-    #         sys.exit(0)
-    # else:            
-    #     fasta_parser.fileOpen()
-    #fasta_parser.mainLoop()
-    
