@@ -117,7 +117,7 @@ class FastaParserGui(GuiBaseClass):
                     if re.search('^>\S+' + id, line):
                         indicator = True
                     if indicator:
-                        self.text.insert('1.0', line[-1])
+                        self.text.insert('end', line)
                 if not indicator:
                     self.text.insert('1.0', "This file does not contain your ID!")
             
