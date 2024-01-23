@@ -132,6 +132,7 @@ class FastaParserGui(GuiBaseClass):
         header_id = None
         seq_lines = []
         id = self.seq_id.get()
+        self.text.delete('1.0', 'end')
         
         with open(self.file, 'r') as fasta_file:
             for line in fasta_file:
@@ -153,7 +154,6 @@ class FastaParserGui(GuiBaseClass):
 
         for key, val in stats.items():
             if re.search(rf'^>\S+{re.escape(id)}', key, re.IGNORECASE):
-                self.text.delete('1.0', 'end')
                 self.text.insert('1.0', val)
                 
     
