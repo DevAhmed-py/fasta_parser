@@ -14,7 +14,6 @@ from guibaseclass import GuiBaseClass
 from scrolled import Scrolled
 
 
-
 class FastaParserGui(GuiBaseClass):
 
     def __init__(self,root):
@@ -38,14 +37,14 @@ class FastaParserGui(GuiBaseClass):
         
         # Buttons 
         # I could use lambda function to pass self.file into the function but the result will be displayed in the terminal.
-        get_n_button = ttk.Button(frame, text = "--get-n", command= self.get_n_gui)
+        get_n_button = ttk.Button(frame, text = "--get-n", command = self.get_n_gui)
         # get_n_button.pack(side="top", pady=10,fill= "both", expand=True)
         get_n_button.pack(pady=10,fill= "both", expand=True)        # without side
 
-        get_seq_button = ttk.Button(frame,text="--get-n", command=self.get_seq)
+        get_seq_button = ttk.Button(frame, text = "--get-seq", command = self.get_seq_gui)
         get_seq_button.pack(pady=10,fill="both",expand=True)
 
-        grep_seq_button=ttk.Button(frame,text="--grep-seq", command=self.search_seq)
+        grep_seq_button=ttk.Button(frame, text = "--grep-seq", command = self.search_seq_gui)
         # grep_seq_button.pack(side="bottom",pady=10,fill="both",expand=True)
         grep_seq_button.pack(pady=10,fill="both",expand=True)       # without side
         
@@ -88,31 +87,78 @@ class FastaParserGui(GuiBaseClass):
                 self.text.insert('1.0', content)
 
     def get_n_gui(self):
-        pattern = re.compile(r'(\w+\|\w+\|\w+)')
-        header_id = None
-        seq = None
-        for line in self.file:
-            if line.startswith(">"):
-                if header_id is not None:
-                    print(f'{header_id} \t {seq}')
-                header_id = pattern.findall(line)[0] if pattern.findall(line) else "Unknown"
-                seq = 0
-            elif not line.startswith(">"):
-                seq += len(line.strip())
+        with open(self.file, "r") as fasta_file:
+            pattern = re.compile(r'(\w+\|\w+\|\w+)')
+            header_id = None
+            seq = None
+            self.text.delete('1.0', 'end')      # Delete the text field
+                        
+            for line in fasta_file:
+                if line.startswith(">"):
+                    if header_id is not None:
+                        self.text.insert('1.0', f'{header_id} \t {seq} \n' )
+                    header_id = pattern.findall(line)[0] if pattern.findall(line) else "Unknown"
+                    seq = 0
+                elif not line.startswith(">"):
+                    seq += len(line.strip())
 
-        # print(f'{header_id} \t {seq}')
-
-        self.text.delete('1.0', 'end')
-        self.text.insert('1.0', f'{header_id} \t {seq}' )
+        self.text.insert('1.0', f'{header_id} \t {seq} \n')
 
     def get_seq_gui(self):
-        pass
+        indicator = False
+        id = self.seq_id.get()
+        self.text.delete('1.0', 'end')
+
+        with open(self.file, "r") as fasta_file:
+            if "*" not in id:
+                for line in fasta_file:
+                    if indicator and line.startswith(">"):
+                        break
+                    if re.search('^>\S+' + id, line):
+                        indicator = True
+                    if indicator:
+                        self.text.insert('1.0', line[-1])
+                if not indicator:
+                    self.text.insert('1.0', "This file does not contain your ID!")
+            
+            elif "*" in id:
+                # extract the ID, and then the search for the line ^> 
+                # re.search(f"^>[^\s]*{id}",line)
+                pass  # Implementation for handling wildcard ID goes here
+
 
     def search_seq_gui(self):
-        pass
+        stats = {}  # A hash table containing the header_id and their sequences
+        header_id = None
+        seq_lines = []
+        id = self.seq_id.get()
+        
+        with open(self.file, 'r') as fasta_file:
+            for line in fasta_file:
+                if re.search('^>sp\|(\w+)\|(\w+)', line):
+                    if header_id and seq_lines:
+                        stats[header_id.group()] = ''.join(seq_lines)
+                        seq_lines = []
 
+                    header_id = re.match('^>(\S+)', line)
+
+                elif re.search('(?:(?!>)[A-Z])+', line):
+                    seq_match = re.match('(?:(?!>)[A-Z])+', line)
+                    if seq_match:
+                        seq = seq_match.group()
+                        seq_lines.append(seq)
+
+            if header_id and seq_lines:
+                stats[header_id.group(1)] = ''.join(seq_lines)
+
+        for key, val in stats.items():
+            if re.search(rf'^>\S+{re.escape(id)}', key, re.IGNORECASE):
+                self.text.delete('1.0', 'end')
+                self.text.insert('1.0', val)
+                
+    
     def help(self):
-        print("\nUsage: python3 script.py --help | --get-seq | --grep-seq |--get-n  ?[PATTERN|ID]? [FILE]")
+        print("\nUsage: python3 script.py --help | --get-seq | --grep-seq |--get-n  ?[PATTERN|ID]? [FILE] | --gui")
         print("""FASTA-Parser by Ahmed Tijani Akinfalabi, 2024
 Extract information from FASTA sequence files
 -------------------------------------------
@@ -222,6 +268,11 @@ if __name__ == "__main__":
             root.title("FASTA Parser App")
             fasta_class.fileOpen()
             fasta_class.mainLoop()
-    else:
-        fasta_class = FastaParserGui(root)
-        fasta_class.main(sys.argv)
+
+        # after importing
+        # else:
+        #     fastaParser2.main(sys.argv)
+        
+        else:
+            fasta_class = FastaParserGui(root)
+            fasta_class.main(sys.argv)
