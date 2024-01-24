@@ -40,27 +40,19 @@ class FastaParserGui(GuiBaseClass):
 
         # Create ttk.Entry for entering FASTA ID
         self.seq_id = ttk.Entry(top_pw, width=10)
-        self.seq_id.insert(0, "Please enter your sequence ID")
+        self.seq_id.insert(0, "Enter your sequence ID")
         self.seq_id.pack(side="left", pady=10, fill="both", expand=True)
         
         # Buttons 
         # I could use lambda function to pass self.file into the function but the result will be displayed in the terminal.
-        get_n_button = ttk.Button(buttons_pw, text = "--get-n", command = self.get_n_gui)
-        # get_n_button.pack(side="top", pady=10,fill= "both", expand=True)
-        get_n_button.pack(side="top", pady=10,fill= "x")        # without side
+        get_n_button = ttk.Button(buttons_pw, text = "Sequence length", command = self.get_n_gui)
+        get_n_button.pack(side="top", pady=10,fill= "x")       
 
-        get_seq_button = ttk.Button(buttons_pw, text = "--get-seq", command = self.get_seq_gui)
+        get_seq_button = ttk.Button(buttons_pw, text = "Sequence info", command = self.get_seq_gui)
         get_seq_button.pack(side="top", pady=10,fill="x")
 
-        grep_seq_button=ttk.Button(buttons_pw, text = "--grep-seq", command = self.search_seq_gui)
-        # grep_seq_button.pack(side="bottom",side="top", pady=10,fill="x)
-        grep_seq_button.pack(side="top", pady=10,fill="x")       # without side
-        
-
-        # Create a ScrolledText widget for displaying the sequence text
-        # self.text = tk.Text(frame, wrap = "none")
-        # Scrolled(self.text)
-
+        grep_seq_button=ttk.Button(buttons_pw, text = "Search seqeunce", command = self.search_seq_gui)
+        grep_seq_button.pack(side="top", pady=10,fill="x")
 
         # Text widget with scrollbar on the left side
         self.text = tk.Text(frame, height=35, wrap= "word")
@@ -73,11 +65,6 @@ class FastaParserGui(GuiBaseClass):
         # # Text widget with scrollbar on the right side
         # self.text2 = tk.Text(frame, wrap="word")
         # self.text2.pack(side="right", fill="both", expand=True)
-
-        # scrollbar_text2 = tk.Scrollbar(frame, command=self.text2.yview)
-        # scrollbar_text2.pack(side="right", fill="y")
-        # self.text2.config(yscrollcommand=scrollbar_text2.set)
-
                 
     def fileOpen(self):
         if self.lastdir is not None:
@@ -86,8 +73,8 @@ class FastaParserGui(GuiBaseClass):
             initialdir = os.getcwd()
 
         self.file = fd.askopenfilename(initialdir = initialdir, title = "Select a Fasta file", filetypes=self.filetypes)
-        
-        # self.message(self.file)
+        self.message(self.file)
+
         if os.path.isfile(self.file):
             with open(self.file, "r") as file:
                 content = file.read()
@@ -99,7 +86,7 @@ class FastaParserGui(GuiBaseClass):
             pattern = re.compile(r'(\w+\|\w+\|\w+)')
             header_id = None
             seq = None
-            self.text.delete('1.0', 'end')      # Delete the text field
+            self.text.delete('1.0', 'end')      # Delete the text field from the first character
                         
             for line in fasta_file:
                 if line.startswith(">"):
@@ -131,10 +118,10 @@ class FastaParserGui(GuiBaseClass):
                     self.text.insert('1.0', "This file does not contain your ID!")
             
             elif "*" in id:
-                # extract the ID, and then the search for the line ^> 
-                # re.search(f"^>[^\s]*{id}",line)
-                pass  # Implementation for handling wildcard ID goes here
-
+                if re.search(f"^>[^\s]*{id}",line):
+                    indicator = True
+                if indicator:
+                    print(line)
 
     def search_seq_gui(self):
         stats = {}  # A hash table containing the header_id and their sequences
@@ -162,11 +149,12 @@ class FastaParserGui(GuiBaseClass):
                 stats[header_id.group()] = ''.join(seq_lines)
 
         for key, val in stats.items():
-            if re.search(rf'^>\S+{re.escape(id)}', key, re.IGNORECASE):
+            n_id = re.sub("\|","\\|", id)
+            
+            if re.search(f'{n_id}', key):
                 self.text.delete('1.0', 'end')
-
                 self.text.insert('1.0', val)
-                
+
     
     def help(self):
         print("\nUsage: python3 script.py --help | --get-seq | --grep-seq |--get-n  ?[PATTERN|ID]? [FILE] | --gui")
@@ -214,7 +202,13 @@ Optional arguments are (either --help, --get-n or ---get-seq or --grep-seq):
                 if not indicator:
                     print("This file does not contain your ID!")
             elif "*" in id:
-                pass  # Implementation for handling wildcard ID goes here
+                # extract the ID, and then the search for the line ^> 
+                # re.search(f"^>[^\s]*{id}",line)
+                if re.search(f"^>[^\s]*{id}",line):
+                    indicator = True
+                if indicator:
+                    print(line)
+                
 
     def search_seq(self, file, id=''):
         stats = {}  # A hash table containing the header_id and their sequences
@@ -239,9 +233,10 @@ Optional arguments are (either --help, --get-n or ---get-seq or --grep-seq):
 
             if header_id and seq_lines:
                 stats[header_id.group()] = ''.join(seq_lines)       # By changing header_id.group(1) to header_id.group(), I got to print the last sequence
-        
+         
         for key, val in stats.items():
-            if re.search(rf'^>\S+{re.escape(id)}', key, re.IGNORECASE):
+            n_id = re.sub("\|","\\|", id)
+            if re.search(f'{n_id}', key):
                 print(val)
 
     def main(self, argv):
@@ -258,7 +253,7 @@ Optional arguments are (either --help, --get-n or ---get-seq or --grep-seq):
                     print(f'File `{argv[3]}` does not exist or is not a fasta file')
             elif sys.argv[1] == '--grep-seq':
                 if os.path.isfile(argv[3]) and argv[3].endswith('fasta'):
-                    id_arg = sys.argv[2] if re.search('[A-Z_]+', sys.argv[2]) else None
+                    id_arg = sys.argv[2] if re.search('^sp\|(\w+)\|(\w+)$', sys.argv[2]) else None
                     self.search_seq(argv[3], id_arg)
                 else:
                     print(f'File `{argv[3]}` does not exist or is not a fasta file')
@@ -280,10 +275,6 @@ if __name__ == "__main__":
             fasta_class.fileOpen()
             fasta_class.mainLoop()
 
-        # after importing
-        # else:
-        #     fastaParser2.main(sys.argv)
-        
         else:
             fasta_class = FastaParserGui(root)
             fasta_class.main(sys.argv)
