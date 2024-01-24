@@ -27,26 +27,34 @@ class FastaParserGui(GuiBaseClass):
         # fmenu.insert_command(1, label = "Save File ...", underline = 0, command = self.fileSave)
         
         frame = self.getFrame()
-        frame.pack(side="top",fill= "both")
+        self.addStatusBar()
+        self.progress(50)
+        
+        # Created a top level PanedWindow for the entry and buttons
+        top_pw = ttk.PanedWindow(frame, orient="vertical")
+        top_pw.pack(side="top", fill="both", expand=True)
+
+        # Created a top level PanedWindow for the only buttons
+        buttons_pw = ttk.PanedWindow(top_pw, orient="horizontal")
+        buttons_pw.pack(side="right", fill="both", expand=True)
 
         # Create ttk.Entry for entering FASTA ID
-        self.seq_id = ttk.Entry(frame)
+        self.seq_id = ttk.Entry(top_pw, width=10)
         self.seq_id.insert(0, "Please enter your sequence ID")
-        # self.seq_id.grid(row=0, column=0, padx=5, pady=5)
-        self.seq_id.pack(side="left",pady=10, fill="both",expand=True)
+        self.seq_id.pack(side="left", pady=10, fill="both", expand=True)
         
         # Buttons 
         # I could use lambda function to pass self.file into the function but the result will be displayed in the terminal.
-        get_n_button = ttk.Button(frame, text = "--get-n", command = self.get_n_gui)
+        get_n_button = ttk.Button(buttons_pw, text = "--get-n", command = self.get_n_gui)
         # get_n_button.pack(side="top", pady=10,fill= "both", expand=True)
-        get_n_button.pack(pady=10,fill= "both", expand=True)        # without side
+        get_n_button.pack(side="top", pady=10,fill= "x")        # without side
 
-        get_seq_button = ttk.Button(frame, text = "--get-seq", command = self.get_seq_gui)
-        get_seq_button.pack(pady=10,fill="both",expand=True)
+        get_seq_button = ttk.Button(buttons_pw, text = "--get-seq", command = self.get_seq_gui)
+        get_seq_button.pack(side="top", pady=10,fill="x")
 
-        grep_seq_button=ttk.Button(frame, text = "--grep-seq", command = self.search_seq_gui)
-        # grep_seq_button.pack(side="bottom",pady=10,fill="both",expand=True)
-        grep_seq_button.pack(pady=10,fill="both",expand=True)       # without side
+        grep_seq_button=ttk.Button(buttons_pw, text = "--grep-seq", command = self.search_seq_gui)
+        # grep_seq_button.pack(side="bottom",side="top", pady=10,fill="x)
+        grep_seq_button.pack(side="top", pady=10,fill="x")       # without side
         
 
         # Create a ScrolledText widget for displaying the sequence text
@@ -55,7 +63,7 @@ class FastaParserGui(GuiBaseClass):
 
 
         # Text widget with scrollbar on the left side
-        self.text = tk.Text(frame, wrap= "word")
+        self.text = tk.Text(frame, height=35, wrap= "word")
         self.text.pack(side="left", fill="both", expand=True)
 
         scrollbar_text = tk.Scrollbar(frame, command=self.text.yview)
@@ -96,13 +104,14 @@ class FastaParserGui(GuiBaseClass):
             for line in fasta_file:
                 if line.startswith(">"):
                     if header_id is not None:
-                        self.text.insert('1.0', f'{header_id} \t {seq} \n' )
+                        self.text.insert('end', f'{header_id} \t {seq} \n' )
                     header_id = pattern.findall(line)[0] if pattern.findall(line) else "Unknown"
                     seq = 0
                 elif not line.startswith(">"):
                     seq += len(line.strip())
 
-        self.text.insert('1.0', f'{header_id} \t {seq} \n')
+        # For the last line
+        self.text.insert('end', f'{header_id} \t {seq} \n')
 
     def get_seq_gui(self):
         indicator = False
@@ -133,7 +142,7 @@ class FastaParserGui(GuiBaseClass):
         seq_lines = []
         id = self.seq_id.get()
         self.text.delete('1.0', 'end')
-        
+
         with open(self.file, 'r') as fasta_file:
             for line in fasta_file:
                 if re.search('^>sp\|(\w+)\|(\w+)', line):
@@ -150,10 +159,12 @@ class FastaParserGui(GuiBaseClass):
                         seq_lines.append(seq)
 
             if header_id and seq_lines:
-                stats[header_id.group(1)] = ''.join(seq_lines)
+                stats[header_id.group()] = ''.join(seq_lines)
 
         for key, val in stats.items():
             if re.search(rf'^>\S+{re.escape(id)}', key, re.IGNORECASE):
+                self.text.delete('1.0', 'end')
+
                 self.text.insert('1.0', val)
                 
     
@@ -227,8 +238,8 @@ Optional arguments are (either --help, --get-n or ---get-seq or --grep-seq):
                         seq_lines.append(seq)
 
             if header_id and seq_lines:
-                stats[header_id.group(1)] = ''.join(seq_lines)
-
+                stats[header_id.group()] = ''.join(seq_lines)       # By changing header_id.group(1) to header_id.group(), I got to print the last sequence
+        
         for key, val in stats.items():
             if re.search(rf'^>\S+{re.escape(id)}', key, re.IGNORECASE):
                 print(val)
@@ -264,8 +275,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] == "--gui":
             fasta_class = FastaParserGui(root)
-            root.geometry('500x400')
-            root.title("FASTA Parser App")
+            root.geometry('600x630')
+            root.title("FASTA Parser App by Ahmed")
             fasta_class.fileOpen()
             fasta_class.mainLoop()
 
