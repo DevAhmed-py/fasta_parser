@@ -1,9 +1,8 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 
 ### Author: Ahmed Tijani Akinfalabi
 ### Date: 2024-01-19
 ### Name: FASTA-Parser 
-### Description: Test Examination 2, Task 2
 
 import sys, os, re
 import tkinter as tk
@@ -19,12 +18,11 @@ class FastaParserGui(GuiBaseClass):
     def __init__(self,root):
         super().__init__(root)
 
-        self.lastdir = None  # Last opened file directory
+        self.lastdir = None 
         self.filetypes = [('Fasta Files', '*.fasta'), ('Text Files', '*.txt'), ('All Files', '*.*')]
 
         fmenu = self.getMenu('File')
         fmenu.insert_command(0,label = "Open File ...", underline = 0,command = self.fileOpen)
-        # fmenu.insert_command(1, label = "Save File ...", underline = 0, command = self.fileSave)
         
         frame = self.getFrame()
         self.addStatusBar()
@@ -62,9 +60,6 @@ class FastaParserGui(GuiBaseClass):
         scrollbar_text.pack(side="left", fill="y")
         self.text.config(yscrollcommand=scrollbar_text.set)
 
-        # # Text widget with scrollbar on the right side
-        # self.text2 = tk.Text(frame, wrap="word")
-        # self.text2.pack(side="right", fill="both", expand=True)
                 
     def fileOpen(self):
         if self.lastdir is not None:
@@ -86,7 +81,7 @@ class FastaParserGui(GuiBaseClass):
             pattern = re.compile(r'(\w+\|\w+\|\w+)')
             header_id = None
             seq = None
-            self.text.delete('1.0', 'end')      # Delete the text field from the first character
+            self.text.delete('1.0', 'end')  
                         
             for line in fasta_file:
                 if line.startswith(">"):
@@ -99,29 +94,30 @@ class FastaParserGui(GuiBaseClass):
 
         # For the last line
         self.text.insert('end', f'{header_id} \t {seq} \n')
-
+        
     def get_seq_gui(self):
         indicator = False
         id = self.seq_id.get()
+        seq = ""
+        lazy = id.find("*")>1
+        if lazy: id = ".*"+id[0:-1]
+        pattern = "^>"+id
         self.text.delete('1.0', 'end')
-
+        
         with open(self.file, "r") as fasta_file:
-            if "*" not in id:
-                for line in fasta_file:
-                    if indicator and line.startswith(">"):
-                        break
-                    if re.search('^>\S+' + id, line):
-                        indicator = True
-                    if indicator:
-                        self.text.insert('end', line)
-                if not indicator:
-                    self.text.insert('1.0', "This file does not contain your ID!")
-            
-            elif "*" in id:
-                if re.search(f"^>[^\s]*{id}",line):
+            for line in fasta_file:
+                if re.search(pattern, line):
+                    id = re.sub("^>([^\s]+).*\n","\\1",line)
+                    seq = line
                     indicator = True
-                if indicator:
-                    print(line)
+                elif indicator and re.search("^>", line):
+                    break
+                elif indicator:
+                    seq = seq + line
+                elif not indicator:
+                    self.text.insert('1.0', "This file does not contain your ID!")
+
+        self.text.insert('end', seq)
 
     def search_seq_gui(self):
         stats = {}  # A hash table containing the header_id and their sequences
