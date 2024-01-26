@@ -45,7 +45,7 @@ class FastaParserGui(GuiBaseClass):
         
         # Buttons 
         # I could use lambda function to pass self.file into the function but the result will be displayed in the terminal.
-        get_n_button = ttk.Button(buttons_pw, text = "Sequence length", command = self.get_n_gui)
+        get_n_button = ttk.Button(buttons_pw, text = "Sequence lengths", command = self.get_n_gui)
         get_n_button.pack(side="top", pady=10,fill= "x")       
 
         get_seq_button = ttk.Button(buttons_pw, text = "Sequence info", command = self.get_seq_gui)
@@ -150,7 +150,7 @@ class FastaParserGui(GuiBaseClass):
 
         for key, val in stats.items():
             n_id = re.sub("\|","\\|", id)
-            
+
             if re.search(f'{n_id}', key):
                 self.text.delete('1.0', 'end')
                 self.text.insert('1.0', val)
@@ -189,25 +189,22 @@ Optional arguments are (either --help, --get-n or ---get-seq or --grep-seq):
 
     def get_seq(self, file, id=''):
         indicator = False
+        seq = ""
+        lazy = id.find("*")>1
+        if lazy: id = ".*"+id[0:-1]
+        pattern = "^>"+id
+        
         with open(file, "r") as fasta_file:
-            if "*" not in id:
-                for line in fasta_file:
-                    if indicator and line.startswith(">"):
-                        break
-                    if re.search('^>\S+' + id, line):
-                        indicator = True
-                    if indicator:
-                        print(line)
-
-                if not indicator:
-                    print("This file does not contain your ID!")
-            elif "*" in id:
-                # extract the ID, and then the search for the line ^> 
-                # re.search(f"^>[^\s]*{id}",line)
-                if re.search(f"^>[^\s]*{id}",line):
+            for line in fasta_file:
+                if re.search(pattern, line):
+                    id = re.sub("^>([^\s]+).*\n","\\1",line)
+                    seq = line
                     indicator = True
-                if indicator:
-                    print(line)
+                elif indicator and re.search("^>", line):
+                    break
+                elif indicator:
+                    seq = seq + line
+        print(seq)
                 
 
     def search_seq(self, file, id=''):
