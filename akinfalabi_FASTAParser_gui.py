@@ -120,7 +120,7 @@ class FastaParserGui(GuiBaseClass):
         self.text.insert('end', seq)
 
     def search_seq_gui(self):
-        stats = {}  # A hash table containing the header_id and their sequences
+        stats = {}
         header_id = None
         seq_lines = []
         id = self.seq_id.get()
@@ -204,7 +204,7 @@ Optional arguments are (either --help, --get-n or ---get-seq or --grep-seq):
                 
 
     def search_seq(self, file, id=''):
-        stats = {}  # A hash table containing the header_id and their sequences
+        stats = {}
 
         with open(file, 'r') as fasta_file:
             header_id = None
